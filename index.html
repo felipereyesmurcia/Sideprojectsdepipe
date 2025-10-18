@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quest Board - Task Tracker</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        function QuestBoard() {
+          const [tasks, setTasks] = useState(() => {
+            const saved = localStorage.getItem('questboard-tasks');
+            return saved ? JSON.parse(saved) : [];
+          });
+          const [newTask, setNewTask] = useState('');
+          const [selectedCategory, setSelectedCategory] = useState('felipe');
+          const [selectedPriority, setSelectedPriority] = useState('medium');
+          const [xp, setXp] = useState(() => {
+            const saved = localStorage.getItem('questboard-xp');
+            return saved ? parseInt(saved) : 0;
+          });
+          const [streak, setStreak] = useState(() => {
+            const saved = localStorage.getItem('questboard-streak');
+            return saved ? parseInt(saved) : 0;
+          });
+          const [lastCompletedDate, setLastCompletedDate] = useState(() => {
+            return localStorage.getItem('questboard-lastdate');
+          });
+
+          useEffect(() => {
+            localStorage.setItem('questboard-tasks', JSON.stringify(tasks));
+          }, [tasks]);
+
+          useEffect(() => {
+            localStorage.setItem('questboard-xp', xp.toString());
+          }, [xp]);
+
+          useEffect(() => {
+            localStorage.setItem('questboard-streak', streak.toString());
+          }, [streak]);
+
+          useEffect(() => {
+            if (lastCompletedDate) {
+              localStorage.setItem('questboard-lastdate', lastCompletedDate);
+            }
+          }, [lastCompletedDate]);
+
+          const categories = {
+            felipe: { name: 'Felipe', color: 'bg-orange-500', lightColor: 'bg-orange-100', textColor: 'text-orange-600' },
+            student: { name: 'Student', color: 'bg-blue-500', lightColor: 'bg-blue-100', textColor: 'text-blue-600' },
+            entrepreneur: { name: 'Entrepreneur', color: 'bg-purple-500', lightColor: 'bg-purple-100', textColor: 'text-purple-600' },
+            athlete: { name: 'Athlete', color: 'bg-green-500', lightColor: 'bg-green-100', textColor: 'text-green-600' }
+          };
+
+          const priorities = {
+            high: { xp: 30, label: 'High' },
+            medium: { xp: 20, label: 'Medium' },
+            low: { xp: 10, label: 'Low' }
+          };
+
+          const level = Math.floor(xp / 100) + 1;
+          const xpProgress = (xp % 100);
+
+          const addTask = () => {
+            if (newTask.trim()) {
+              setTasks([...tasks, {
+                id: Date.now(),
+                text: newTask,
+                category: selectedCategory,
+                priority: selectedPriority,
+                completed: false
+              }]);
+              setNewTask('');
+            }
+          };
+
+          const completeTask = (taskId) => {
+            const task = tasks.find(t => t.id === taskId);
+            const earnedXp = priorities[task.priority].xp;
+            setXp(xp + earnedXp);
+            
+            const today = new Date().toDateString();
+            if (lastCompletedDate === today) {
+              // Already completed a task today, streak stays same
+            } else if (lastCompletedDate === new Date(Date.now() - 86400000).toDateString()) {
+              // Completed yesterday, increment streak
+              setStreak(streak + 1);
+            } else {
+              // Streak broken or first task
+              setStreak(1);
+            }
+            setLastCompletedDate(today);
+            
+            setTasks(tasks.filter(t => t.id !== taskId));
+          };
+
+          const deleteTask = (taskId) => {
+            setTasks(tasks.filter(t => t.id !== taskId));
+          };
+
+          const handleKeyPress = (e) => {
+            if (e.key === 'Enter') {
+              addTask();
+            }
+          };
+
+          // Lucide React icons as inline SVG
+          const Trophy = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+              <path d="M4 22h16"></path>
+              <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+              <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+              <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+            </svg>
+          );
+
+          const Flame = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+            </svg>
+          );
+
+          const Plus = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          );
+
+          const Check = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          );
+
+          const X = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          );
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-6">
+              <div className="max-w-4xl mx-auto">
+                {/* Header Stats */}
+                <div className="mb-8">
+                  <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-green-400 bg-clip-text text-transparent">
+                    Quest Board
+                  </h1>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-gray-400 text-sm">Level</span>
+                        <div className="text-yellow-500"><Trophy /></div>
+                      </div>
+                      <div className="text-3xl font-bold">{level}</div>
+                      <div className="mt-2 bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${xpProgress}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">{xp % 100} / 100 XP</div>
+                    </div>
+
+                    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-gray-400 text-sm">Total XP</span>
+                        <div className="w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full" />
+                      </div>
+                      <div className="text-3xl font-bold">{xp}</div>
+                    </div>
+
+                    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-gray-400 text-sm">Streak</span>
+                        <div className="text-orange-500"><Flame /></div>
+                      </div>
+                      <div className="text-3xl font-bold">{streak}</div>
+                      <div className="text-xs text-gray-400 mt-1">days</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Add Task */}
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-6">
+                  <div className="flex gap-3 mb-3">
+                    <input
+                      type="text"
+                      value={newTask}
+                      onChange={(e) => setNewTask(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Enter new quest..."
+                      className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    />
+                    <button
+                      onClick={addTask}
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg px-6 py-2 font-semibold transition-all flex items-center gap-2"
+                    >
+                      <Plus />
+                      Add
+                    </button>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <div className="flex gap-2">
+                      {Object.entries(categories).map(([key, cat]) => (
+                        <button
+                          key={key}
+                          onClick={() => setSelectedCategory(key)}
+                          className={`px-4 py-1 rounded-lg text-sm font-medium transition-all ${
+                            selectedCategory === key 
+                              ? `${cat.color} text-white` 
+                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          }`}
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="flex gap-2 ml-auto">
+                      {Object.entries(priorities).map(([key, pri]) => (
+                        <button
+                          key={key}
+                          onClick={() => setSelectedPriority(key)}
+                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                            selectedPriority === key 
+                              ? 'bg-yellow-500 text-gray-900' 
+                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          }`}
+                        >
+                          {pri.label} (+{pri.xp}xp)
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tasks by Category */}
+                {Object.entries(categories).map(([catKey, cat]) => {
+                  const categoryTasks = tasks.filter(t => t.category === catKey);
+                  
+                  return (
+                    <div key={catKey} className="mb-6">
+                      <h2 className={`text-xl font-bold mb-3 ${cat.textColor}`}>
+                        {cat.name} Quests
+                        {categoryTasks.length > 0 && (
+                          <span className="ml-2 text-sm text-gray-400">({categoryTasks.length})</span>
+                        )}
+                      </h2>
+                      
+                      {categoryTasks.length === 0 ? (
+                        <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-500">
+                          No quests yet. Add one above!
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {categoryTasks.map(task => (
+                            <div
+                              key={task.id}
+                              className="bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center justify-between hover:border-gray-600 transition-all"
+                            >
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className={`w-2 h-2 rounded-full ${cat.color}`} />
+                                <span className="text-white">{task.text}</span>
+                                <span className="text-xs px-2 py-1 rounded bg-gray-700 text-gray-300">
+                                  +{priorities[task.priority].xp} XP
+                                </span>
+                              </div>
+                              
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => completeTask(task.id)}
+                                  className="bg-green-600 hover:bg-green-700 rounded-lg p-2 transition-all"
+                                >
+                                  <Check />
+                                </button>
+                                <button
+                                  onClick={() => deleteTask(task.id)}
+                                  className="bg-red-600 hover:bg-red-700 rounded-lg p-2 transition-all"
+                                >
+                                  <X />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<QuestBoard />);
+    </script>
+</body>
+</html>
